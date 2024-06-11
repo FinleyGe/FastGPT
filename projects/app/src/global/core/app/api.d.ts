@@ -14,6 +14,7 @@ export type AppUpdateParams = {
   permission?: AppSchema['permission'];
   teamTags?: AppSchema['teamTags'];
   defaultPermission?: AppSchema['defaultPermission'];
+  recursion?: boolean;
 };
 
 export type PostPublishAppProps = {

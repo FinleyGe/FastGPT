@@ -10,6 +10,7 @@ import { getResourcePermission } from '../controller';
 import { AppPermission } from '@fastgpt/global/support/permission/app/controller';
 import { AuthResponseType } from '../type/auth.d';
 import { PermissionValueType } from '@fastgpt/global/support/permission/type';
+import { AppTypeEnum } from '@fastgpt/global/core/app/constants';
 
 export const authAppByTmbId = async ({
   teamId,
@@ -41,7 +42,34 @@ export const authAppByTmbId = async ({
     }
 
     const isOwner = tmbPer.isOwner || String(app.tmbId) === tmbId;
-    const Per = new AppPermission({ per: rp?.permission ?? app.defaultPermission, isOwner });
+    let parentDefaultPermission = null;
+    let parentRp = null;
+
+    if (app.type !== AppTypeEnum.folder && app.inheritancePermission) {
+      // app is a app rather than a folder, and app has inheritant option
+      if (!app.parentId) {
+        return Promise.reject(AppErrEnum.invalidAppConfig);
+      }
+
+      const parentFolder = await MongoApp.findById(app.parentId).lean();
+      if (!parentFolder) {
+        return Promise.reject(AppErrEnum.unExist);
+      }
+
+      parentDefaultPermission = parentFolder.defaultPermission;
+      parentRp = await getResourcePermission({
+        teamId,
+        tmbId,
+        resourceId: app.parentId,
+        resourceType: PerResourceTypeEnum.app
+      });
+    }
+
+    const Per = new AppPermission({
+      per:
+        rp?.permission ?? app.defaultPermission ?? parentRp?.permission ?? parentDefaultPermission,
+      isOwner
+    });
 
     if (!Per.checkPer(per)) {
       return Promise.reject(AppErrEnum.unAuthApp);

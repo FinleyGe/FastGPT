@@ -34,6 +34,7 @@ export type AppSchema = {
   inited?: boolean;
   teamTags: string[];
   defaultPermission: PermissionValueType;
+  inheritancePermission?: boolean;
 };
 
 export type AppListItemType = {

@@ -110,6 +110,19 @@ const AppSchema = new Schema({
   defaultPermission: {
     type: Number,
     default: AppDefaultPermissionVal
+  },
+
+  // whether the app/folder inherits parent's permission/collobrator.
+  // As to *folder*
+  // 1, if true, the folder instance's properties will change with the changing of parents'
+  // 2. if false, it will not change.
+  // As to *app*
+  // 1. if true, the app instance's collobrator will inherit the parents'.
+  // 2. if false. the collobrators config is independent.
+  // It should be false when the app's parentId is null.
+  inheritancePermission: {
+    type: Boolean,
+    default: true // TODO: should it be true?
   }
 });
 
