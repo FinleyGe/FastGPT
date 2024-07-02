@@ -1,5 +1,5 @@
 import type { UserModelSchema } from '../type';
-import type { TeamMemberRoleEnum, TeamMemberStatusEnum } from './constant';
+import type { TeamMemberStatusEnum } from './constant';
 import { LafAccountType } from './type';
 import { PermissionValueType, ResourcePermissionType } from '../../permission/type';
 import { TeamPermission } from '../../permission/user/controller';
@@ -35,7 +35,6 @@ export type TeamMemberSchema = {
   userId: string;
   createTime: Date;
   name: string;
-  role: `${TeamMemberRoleEnum}`;
   status: `${TeamMemberStatusEnum}`;
   defaultTeam: boolean;
 };
@@ -60,7 +59,6 @@ export type TeamTmbItemType = {
   tmbId: string;
   teamDomain: string;
   defaultTeam: boolean;
-  role: `${TeamMemberRoleEnum}`;
   status: `${TeamMemberStatusEnum}`;
   lafAccount?: LafAccountType;
   permission: TeamPermission;
@@ -72,8 +70,6 @@ export type TeamMemberItemType = {
   teamId: string;
   memberName: string;
   avatar: string;
-  // TODO: this should be deprecated.
-  role: `${TeamMemberRoleEnum}`;
   status: `${TeamMemberStatusEnum}`;
   permission: TeamPermission;
 };

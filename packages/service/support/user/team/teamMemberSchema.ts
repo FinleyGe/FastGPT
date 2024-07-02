@@ -3,7 +3,6 @@ const { Schema, model, models } = connectionMongo;
 import { TeamMemberSchema as TeamMemberType } from '@fastgpt/global/support/user/team/type.d';
 import { userCollectionName } from '../../user/schema';
 import {
-  TeamMemberRoleMap,
   TeamMemberStatusMap,
   TeamMemberCollectionName,
   TeamCollectionName
@@ -23,10 +22,6 @@ const TeamMemberSchema = new Schema({
   name: {
     type: String,
     default: 'Member'
-  },
-  role: {
-    type: String,
-    enum: Object.keys(TeamMemberRoleMap)
   },
   status: {
     type: String,

@@ -42,7 +42,6 @@ import {
 } from '@/web/support/wallet/sub/constants';
 
 import StandardPlanContentList from '@/components/support/wallet/StandardPlanContentList';
-import { TeamMemberRoleEnum } from '@fastgpt/global/support/user/team/constant';
 import QuestionTip from '@fastgpt/web/components/common/MyTooltip/QuestionTip';
 
 const StandDetailModal = dynamic(() => import('./standardDetailModal'));
@@ -599,7 +598,7 @@ const Other = () => {
           </Link>
         )}
 
-        {feConfigs?.lafEnv && userInfo?.team.role === TeamMemberRoleEnum.owner && (
+        {feConfigs?.lafEnv && userInfo?.team.permission.isOwner && (
           <Flex
             bg={'white'}
             py={3}

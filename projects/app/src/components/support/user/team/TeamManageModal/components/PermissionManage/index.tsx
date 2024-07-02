@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Flex, Tag, TagLabel, useDisclosure } from '@chakra-ui/react';
+import { Box, Button, Flex, useDisclosure } from '@chakra-ui/react';
 import { useTranslation } from 'next-i18next';
 import { useContextSelector } from 'use-context-selector';
 import MyIcon from '@fastgpt/web/components/common/Icon';
@@ -64,7 +64,7 @@ function PermissionManage() {
             {TeamPermissionList['manage'].description}
           </Box>
         </Flex>
-        {userInfo?.team.role === 'owner' && (
+        {userInfo?.team.permission.isOwner && (
           <Button
             variant={'whitePrimary'}
             size="sm"
@@ -88,7 +88,7 @@ function PermissionManage() {
                 <Box fontSize={'sm'} ml={1}>
                   {member.memberName}
                 </Box>
-                {userInfo?.team.role === 'owner' && (
+                {userInfo?.team.permission.isOwner && (
                   <MyIcon
                     ml={4}
                     name="common/trash"

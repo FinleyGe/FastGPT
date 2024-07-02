@@ -2,7 +2,6 @@ import { Box, Button, Flex, useDisclosure } from '@chakra-ui/react';
 import MyIcon from '@fastgpt/web/components/common/Icon';
 import { useUserStore } from '@/web/support/user/useUserStore';
 import { useContextSelector } from 'use-context-selector';
-import { TeamMemberRoleEnum } from '@fastgpt/global/support/user/team/constant';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'next-i18next';
 import { useSystemStore } from '@/web/common/system/useSystemStore';
@@ -102,7 +101,7 @@ function TeamCard() {
         <Box fontSize={['sm', 'md']} fontWeight={'bold'} alignItems={'center'}>
           {userInfo?.team.teamName}
         </Box>
-        {userInfo?.team.role === TeamMemberRoleEnum.owner && (
+        {userInfo?.team.permission.isOwner && (
           <MyIcon
             name="edit"
             w={'14px'}

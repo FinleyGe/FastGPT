@@ -1,10 +1,6 @@
 import { TeamTmbItemType, TeamMemberWithTeamSchema } from '@fastgpt/global/support/user/team/type';
 import { ClientSession, Types } from '../../../common/mongo';
-import {
-  TeamMemberRoleEnum,
-  TeamMemberStatusEnum,
-  notLeaveStatus
-} from '@fastgpt/global/support/user/team/constant';
+import { TeamMemberStatusEnum, notLeaveStatus } from '@fastgpt/global/support/user/team/constant';
 import { MongoTeamMember } from './teamMemberSchema';
 import { MongoTeam } from './teamSchema';
 import { UpdateTeamProps } from '@fastgpt/global/support/user/team/controller';
@@ -33,13 +29,13 @@ async function getTeamMember(match: Record<string, any>): Promise<TeamTmbItemTyp
     balance: tmb.teamId.balance,
     tmbId: String(tmb._id),
     teamDomain: tmb.teamId?.teamDomain,
-    role: tmb.role,
     status: tmb.status,
     defaultTeam: tmb.defaultTeam,
     lafAccount: tmb.teamId.lafAccount,
     permission: new TeamPermission({
       per: tmbPer?.permission ?? tmb.teamId.defaultPermission,
-      isOwner: tmb.role === TeamMemberRoleEnum.owner
+      // isOwner: tmb.role === TeamMemberRoleEnum.owner
+      isOwner: String(tmb.userId) === String(tmb.teamId.ownerId)
     })
   };
 }
@@ -102,7 +98,6 @@ export async function createDefaultTeam({
           teamId: insertedId,
           userId,
           name: 'Owner',
-          role: TeamMemberRoleEnum.owner,
           status: TeamMemberStatusEnum.active,
           createTime: new Date(),
           defaultTeam: true

@@ -1,8 +1,7 @@
-import { Box, Button, Flex, IconButton, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, IconButton } from '@chakra-ui/react';
 import Avatar from '@/components/Avatar';
 import { useTranslation } from 'next-i18next';
 import MyIcon from '@fastgpt/web/components/common/Icon';
-import { TeamMemberRoleEnum } from '@fastgpt/global/support/user/team/constant';
 import { defaultForm } from './components/EditInfoModal';
 import { useUserStore } from '@/web/support/user/useUserStore';
 import { useContextSelector } from 'use-context-selector';
@@ -74,7 +73,7 @@ function TeamList() {
               flex={'1 0 0'}
               w={0}
               fontSize={'sm'}
-              {...(team.role === TeamMemberRoleEnum.owner
+              {...(team.permission.isOwner
                 ? {
                     fontWeight: 'bold'
                   }

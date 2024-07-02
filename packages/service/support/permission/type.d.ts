@@ -15,5 +15,5 @@ export type AuthModeType = {
   authToken?: boolean;
   authRoot?: boolean;
   authApiKey?: boolean;
-  per?: PermissionValueType | 'r' | 'w' | 'owner'; // this is for compatibility
+  per?: PermissionValueType; // this is for compatibility
 };

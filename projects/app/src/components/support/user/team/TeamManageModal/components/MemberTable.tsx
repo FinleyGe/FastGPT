@@ -12,10 +12,7 @@ import {
   Thead,
   Tr
 } from '@chakra-ui/react';
-import {
-  TeamMemberRoleEnum,
-  TeamMemberStatusMap
-} from '@fastgpt/global/support/user/team/constant';
+import { TeamMemberStatusMap } from '@fastgpt/global/support/user/team/constant';
 import { useTranslation } from 'next-i18next';
 import { useContextSelector } from 'use-context-selector';
 import { useUserStore } from '@/web/support/user/useUserStore';
@@ -72,7 +69,7 @@ function MemberTable() {
                 </Td>
                 <Td>
                   {userInfo?.team.permission.hasManagePer &&
-                    item.role !== TeamMemberRoleEnum.owner &&
+                    item.permission.isOwner &&
                     item.tmbId !== userInfo?.team.tmbId && (
                       <PermissionSelect
                         value={item.permission.value}
