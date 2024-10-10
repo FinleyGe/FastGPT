@@ -215,6 +215,7 @@ export async function syncCollaborators({
       resourceId,
       resourceType: resourceType,
       tmbId: item.tmbId,
+      groupId: item.groupId,
       permission: item.permission
     })),
     {
