@@ -67,18 +67,20 @@ beforeAll(async () => {
 
   // await getInitConfig();
   const str = readFileSync('projects/app/.env.local', 'utf-8');
-  const lines = str.split('\n');
-  const systemEnv: Record<string, string> = {};
-  for (const line of lines) {
-    const [key, value] = line.split('=');
-    if (key && value && !key.startsWith('#')) {
-      systemEnv[key] = value;
-      vi.stubEnv(key, value);
+  if (str) {
+    const lines = str.split('\n');
+    const systemEnv: Record<string, string> = {};
+    for (const line of lines) {
+      const [key, value] = line.split('=');
+      if (key && value && !key.startsWith('#')) {
+        systemEnv[key] = value;
+        vi.stubEnv(key, value);
+      }
     }
+    systemEnv.oneapiUrl = systemEnv['ONEAPI_URL'];
+    global.systemEnv = systemEnv as any;
+    await setupModels();
   }
-  systemEnv.oneapiUrl = systemEnv['ONEAPI_URL'];
-  global.systemEnv = systemEnv as any;
-  await setupModels();
 });
 
 afterAll(async () => {

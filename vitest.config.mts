@@ -5,7 +5,8 @@ export default defineConfig({
     coverage: {
       enabled: true,
       reporter: ['text', 'json', 'html'],
-      all: false
+      all: false,
+      reportOnFailure: true
     },
     outputFile: 'test-results.json',
     setupFiles: ['./test/setup.ts'],
