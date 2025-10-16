@@ -159,43 +159,69 @@ const ResponseTags = ({
           return;
         }
 
-        // 2. 调用代理API获取一次性token
-        const result = await getOneTimeToken({
-          corpId,
-          traceId,
-          mediaId
-        });
+        // iOS Safari兼容性：在异步操作之前立即打开一个空白窗口
+        // 这样可以保持用户手势的"信任"状态
+        const newWindow = window.open('', '_blank');
 
-        // 3. 处理API响应
-        if (result.success === true && result.result) {
-          // 4. 跳转到获取的URL
-          window.open(result.result, '_blank');
-        } else {
-          // 5. 根据错误码显示具体错误信息
-          let errorMessage = '无法获取有效的访问链接';
+        if (!newWindow) {
+          // 如果弹窗被阻止，直接打开原始URL
+          window.location.href = url;
+          return;
+        }
 
-          switch (result.errorCode) {
-            case '1010201001':
-              errorMessage = '企业ID不正确，请检查corpId参数';
-              break;
-            case '1010201002':
-              errorMessage = '系统访问密钥不正确，请检查配置';
-              break;
-            case '1010201004':
-              errorMessage = '应用ID不正确，请检查appId配置';
-              break;
-            case '1010201005':
-              errorMessage = '应用访问密钥不正确，请检查appAccessKey配置';
-              break;
-            default:
-              errorMessage = result.errorMsg || '获取文档预览链接失败';
+        try {
+          // 2. 调用代理API获取一次性token
+          const result = await getOneTimeToken({
+            corpId,
+            traceId,
+            mediaId
+          });
+
+          // 3. 处理API响应
+          if (result.success === true && result.result) {
+            // 4. 将获取到的URL设置到预先打开的窗口
+            newWindow.location.href = result.result;
+          } else {
+            // 5. 如果API失败，关闭预先打开的窗口，并显示错误信息
+            newWindow.close();
+
+            let errorMessage = '无法获取有效的访问链接';
+
+            switch (result.errorCode) {
+              case '1010201001':
+                errorMessage = '企业ID不正确，请检查corpId参数';
+                break;
+              case '1010201002':
+                errorMessage = '系统访问密钥不正确，请检查配置';
+                break;
+              case '1010201004':
+                errorMessage = '应用ID不正确，请检查appId配置';
+                break;
+              case '1010201005':
+                errorMessage = '应用访问密钥不正确，请检查appAccessKey配置';
+                break;
+              default:
+                errorMessage = result.errorMsg || '获取文档预览链接失败';
+            }
+
+            toast({
+              title: '获取链接失败',
+              description: errorMessage,
+              status: 'error',
+              duration: 5000,
+              isClosable: true
+            });
           }
+        } catch (apiError) {
+          // API调用失败时，将原始URL设置到预先打开的窗口
+          console.error('API调用失败:', apiError);
+          newWindow.location.href = url;
 
           toast({
-            title: '获取链接失败',
-            description: errorMessage,
-            status: 'error',
-            duration: 5000,
+            title: '网络错误',
+            description: '无法连接到服务器，正在尝试直接打开原始链接',
+            status: 'warning',
+            duration: 3000,
             isClosable: true
           });
         }
@@ -209,8 +235,13 @@ const ResponseTags = ({
           isClosable: true
         });
 
-        // 如果API调用失败，回退到直接打开原始URL
-        window.open(url, '_blank');
+        // 如果所有操作都失败，尝试在当前窗口打开
+        try {
+          window.open(url, '_blank');
+        } catch (openError) {
+          // 最后的回退方案：在当前窗口中导航
+          window.location.href = url;
+        }
       }
     },
     [toast]
