@@ -153,6 +153,38 @@ describe('WorkflowComponents utils', () => {
       ]);
     });
 
+    it('should preserve plugin input render types when storing a workflow tool', () => {
+      const pluginInput = {
+        data: {
+          nodeId: 'plugin-input',
+          name: 'Tool input',
+          intro: '',
+          avatar: '',
+          flowNodeType: FlowNodeTypeEnum.pluginInput,
+          showStatus: false,
+          inputs: [
+            {
+              key: 'query',
+              label: 'Query',
+              valueType: WorkflowIOValueTypeEnum.string,
+              renderTypeList: [FlowNodeInputTypeEnum.input, FlowNodeInputTypeEnum.reference],
+              selectedTypeIndex: 0
+            }
+          ],
+          outputs: []
+        },
+        position: { x: 0, y: 0 }
+      } as any;
+
+      const result = uiWorkflow2StoreWorkflow({ nodes: [pluginInput], edges: [] });
+
+      expect(result.nodes[0].inputs[0]).toMatchObject({
+        renderTypeList: [FlowNodeInputTypeEnum.input, FlowNodeInputTypeEnum.reference],
+        selectedTypeIndex: 0
+      });
+      expect(result.nodes[0].inputs[0]).not.toHaveProperty('selectedType');
+    });
+
     it('should filter malformed edges that cannot be restored', () => {
       const nodes = [
         {

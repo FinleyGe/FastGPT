@@ -33,6 +33,11 @@ import { NodeInputKeyEnum, NodeOutputKeyEnum } from '@fastgpt/global/core/workfl
 
 const FieldEditModal = dynamic(() => import('./InputEditModal'));
 
+/** 返回工作流工具输入在节点参数表中应展示的原始控件类型。 */
+export const getPluginInputDisplayType = (
+  renderTypeList: FlowNodeInputItemType['renderTypeList']
+) => renderTypeList.find((type) => type !== FlowNodeInputTypeEnum.agentGenerated);
+
 /* 
     1. When the plug-in is called, the input of the rendering node is customized.
     2. Customize input nodes. Input and output must be symmetrical.
@@ -138,9 +143,9 @@ const NodePluginInput = ({ data, selected }: NodeProps<FlowNodeItemType>) => {
                       allowUserChatInputAgentGenerated: isUsedAsTool
                     })
                   : input;
-              const inputType = normalizedInput.renderTypeList[0];
+              const inputType = getPluginInputDisplayType(input.renderTypeList);
               return {
-                icon: FlowNodeInputMap[inputType]?.icon as string,
+                icon: inputType ? (FlowNodeInputMap[inputType]?.icon as string) : undefined,
                 label: t(normalizedInput.label as any),
                 type: normalizedInput.valueType
                   ? t(FlowValueTypeMap[normalizedInput.valueType]?.label as any)

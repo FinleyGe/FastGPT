@@ -76,6 +76,11 @@ describe('rewriteAppWorkflowToDetail - legacy workflow tool inputs', () => {
 
     expect(nodes[0].inputs[0]).toMatchObject({ isToolParam: true });
     expect(nodes[0].inputs[1]).toMatchObject({ isToolParam: false });
+    expect(nodes[0].inputs[0]).toMatchObject({
+      renderTypeList: [FlowNodeInputTypeEnum.input, FlowNodeInputTypeEnum.reference]
+    });
+    expect(nodes[0].inputs[0].renderTypeList).not.toContain(FlowNodeInputTypeEnum.agentGenerated);
+    expect(nodes[0].inputs[0]).not.toHaveProperty('selectedType');
   });
 
   it('将固定版本旧工作流工具的 AI 生成推荐交给画布决定', async () => {
