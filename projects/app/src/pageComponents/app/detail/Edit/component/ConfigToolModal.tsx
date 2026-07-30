@@ -1,6 +1,6 @@
 import { Button, Flex, ModalBody } from '@chakra-ui/react';
 import MyModal from '@fastgpt/web/components/common/MyModal';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import MyIcon from '@fastgpt/web/components/common/Icon';
 import { Box } from '@chakra-ui/react';
 import { childAppSystemKey } from '../FormComponent/ToolSelector/ToolSelectModal';
@@ -56,7 +56,12 @@ import { isDebugToolSource, splitCombineToolId } from '@fastgpt/global/core/app/
 import { useRequest } from '@fastgpt/web/hooks/useRequest';
 import type { SelectedToolItemType } from '@fastgpt/global/core/app/formEdit/type';
 import { getNodeToolSetList } from '../../WorkflowComponents/Flow/nodes/components/ToolSetList';
-import { inheritToolInputConfig } from '../FormComponent/ToolSelector/utils';
+import {
+  getToolVersionDisplayLabel,
+  inheritToolInputConfig,
+  preserveConfiguredToolIdentity,
+  shouldLoadToolVersions
+} from '../FormComponent/ToolSelector/utils';
 
 const inputTypeFormKey = (key: string) => `__input_type__${key}`;
 const developerInputTypeFormKey = (key: string) => `__developer_input_type__${key}`;
@@ -208,7 +213,11 @@ const getConfigFormValues = (tool: FlowNodeTemplateType) =>
     {} as Record<string, any>
   );
 
-const getToolVersionText = (tool: FlowNodeTemplateType) => tool.versionLabel || tool.version || '';
+const getToolVersionText = (tool: FlowNodeTemplateType) => {
+  if (tool.versionLabel) return tool.versionLabel;
+  if (tool.flowNodeType === FlowNodeTypeEnum.pluginModule) return '';
+  return tool.version ?? '';
+};
 
 const canShowVersionSelect = (tool: FlowNodeTemplateType) => {
   if (!tool.pluginId || isDebugToolSource(tool.source)) return false;
@@ -233,8 +242,12 @@ const mergeConfiguredTool = ({
   });
   const prevInputMap = new Map(prevTool.inputs.map((input) => [input.key, input]));
 
+  const toolWithPreservedIdentity = preserveConfiguredToolIdentity({
+    tool: inheritedNextTool,
+    sourceTool: prevTool
+  });
   const mergedTool = {
-    ...inheritedNextTool,
+    ...toolWithPreservedIdentity,
     configStatus: prevTool.configStatus,
     inputs: inheritedNextTool.inputs.map((input) => {
       const prevInput = prevInputMap.get(input.key);
@@ -780,6 +793,13 @@ const ToolVersionSelect = ({
       refreshDeps: [tool.pluginId, toolSource]
     }
   );
+  const shouldLoadVersions = shouldLoadToolVersions(tool);
+
+  useEffect(() => {
+    if (shouldLoadVersions) {
+      void loadVersions();
+    }
+  }, [loadVersions, shouldLoadVersions]);
 
   const { runAsync: updateVersion, loading: isUpdatingVersion } = useRequest(
     async (versionId: string) => {
@@ -821,7 +841,11 @@ const ToolVersionSelect = ({
   const valueLabel = useMemo(
     () => (
       <Flex alignItems={'center'} gap={0.5} minW={0} whiteSpace={'nowrap'}>
-        {!tool.version ? t('app:keep_the_latest') : tool.versionLabel}
+        {getToolVersionDisplayLabel({
+          tool,
+          versionList,
+          latestVersionLabel: t('app:keep_the_latest')
+        })}
         {tool.isLatestVersion === false && (
           <MyTag type="fill" colorSchema={'adora'} fontSize={'mini'} borderRadius={'lg'}>
             {t('app:not_the_newest')}
@@ -829,7 +853,7 @@ const ToolVersionSelect = ({
         )}
       </Flex>
     ),
-    [t, tool.isLatestVersion, tool.version, tool.versionLabel]
+    [t, tool, versionList]
   );
 
   if (!canShowVersionSelect(tool)) {

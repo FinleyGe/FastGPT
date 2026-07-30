@@ -625,6 +625,7 @@ export function form2AppWorkflow(
             nodeId,
             id: tool.id,
             pluginId: tool.pluginId,
+            version: tool.version,
             source: tool.source,
             name: tool.name,
             intro: tool.intro,

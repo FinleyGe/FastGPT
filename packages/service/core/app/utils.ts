@@ -295,7 +295,11 @@ export async function rewriteAppWorkflowToDetail({
           const tools = toolsParse.success ? toolsParse.data : [];
           const nodes = await Promise.all(
             tools.map(async (tool) => {
-              const result = await loadToolNode({ id: tool.id, source: tool.source });
+              const result = await loadToolNode({
+                id: tool.id,
+                versionId: tool.version ?? '',
+                source: tool.source
+              });
               if (result.success) {
                 const data = result.data!;
                 const legacyDefaultMode =

@@ -269,6 +269,43 @@ describe('form2AppWorkflow', () => {
 
     expect(restored.selectedTools[0]?.source).toBe('debug:tmbId:tmb-1');
   });
+
+  it('should preserve a fixed tool version when roundtripping simple app tools', () => {
+    const form = getDefaultAppForm();
+    form.aiSettings = {
+      [NodeInputKeyEnum.aiModel]: 'gpt-4o-mini',
+      [NodeInputKeyEnum.aiSystemPrompt]: 'You are a helpful assistant',
+      maxHistories: 5,
+      [NodeInputKeyEnum.aiChatIsResponseText]: true
+    };
+    form.selectedTools = [
+      {
+        id: 'tool-node-1',
+        pluginId: 'personal-app-id',
+        version: 'fixed-version-id',
+        source: 'personal',
+        flowNodeType: FlowNodeTypeEnum.tool,
+        templateType: 'other',
+        name: 'Fixed Tool',
+        avatar: '',
+        intro: '',
+        inputs: [],
+        outputs: [],
+        showStatus: true
+      } as any
+    ];
+
+    const workflow = form2AppWorkflow(form, mockT);
+    const toolNode = workflow.nodes.find((node) => node.pluginId === 'personal-app-id');
+    expect(toolNode?.version).toBe('fixed-version-id');
+
+    const restored = appWorkflow2Form({
+      nodes: workflow.nodes,
+      chatConfig: workflow.chatConfig
+    });
+
+    expect(restored.selectedTools[0]?.version).toBe('fixed-version-id');
+  });
 });
 
 describe('filterSensitiveFormData', () => {

@@ -648,7 +648,7 @@ describe('rewriteAppWorkflowToDetail - agent skills', () => {
         }
       ],
       outputs: [],
-      version: 'v1'
+      version: 'fixed-version'
     });
     authAppByTmbIdMock.mockResolvedValue({});
 
@@ -657,6 +657,7 @@ describe('rewriteAppWorkflowToDetail - agent skills', () => {
       value: [
         {
           id: toolAppId,
+          version: 'fixed-version',
           inputs: [
             {
               key: 'query',
@@ -685,10 +686,18 @@ describe('rewriteAppWorkflowToDetail - agent skills', () => {
       isRoot: false
     });
 
+    expect(getClientToolPreviewNodeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        appId: toolAppId,
+        versionId: 'fixed-version'
+      })
+    );
+
     expect(
       nodes[0].inputs.find((input) => input.key === NodeInputKeyEnum.selectedTools)?.value
     ).toMatchObject([
       {
+        version: 'fixed-version',
         inputs: [
           {
             key: 'query',
