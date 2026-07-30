@@ -1,4 +1,4 @@
-import { Button, Flex, ModalBody } from '@chakra-ui/react';
+import { Button, Flex, FormControl, FormErrorMessage, ModalBody } from '@chakra-ui/react';
 import MyModal from '@fastgpt/web/components/common/MyModal';
 import React, { useEffect, useMemo, useState } from 'react';
 import MyIcon from '@fastgpt/web/components/common/Icon';
@@ -62,6 +62,7 @@ import {
   preserveConfiguredToolIdentity,
   shouldLoadToolVersions
 } from '../FormComponent/ToolSelector/utils';
+import { validateToolInputValue } from '@fastgpt/global/core/app/tool/runtime';
 
 const inputTypeFormKey = (key: string) => `__input_type__${key}`;
 const developerInputTypeFormKey = (key: string) => `__developer_input_type__${key}`;
@@ -458,20 +459,31 @@ const ConfigValueInput = ({
       name={input.key}
       rules={{
         validate: (value) => {
-          if (!input.required) return true;
-          return isToolInputValueConfigured({ input, value });
+          if (input.required && !isToolInputValueConfigured({ input, value })) return false;
+
+          const configuredValue = value ?? input.defaultValue;
+          if (configuredValue === undefined) return true;
+
+          const validationResult = validateToolInputValue({
+            schema: input.customJsonSchema,
+            value: configuredValue
+          });
+          return validationResult.success || validationResult.errors.join('; ');
         }
       }}
       render={({ field: { onChange, value }, fieldState: { error } }) => {
         return (
-          <InputRender
-            {...input}
-            isRichText={false}
-            isInvalid={!!error}
-            inputType={nodeInputTypeToInputType([inputType])}
-            value={value}
-            onChange={onChange}
-          />
+          <FormControl isInvalid={!!error}>
+            <InputRender
+              {...input}
+              isRichText={false}
+              isInvalid={!!error}
+              inputType={nodeInputTypeToInputType([inputType])}
+              value={value}
+              onChange={onChange}
+            />
+            {error?.message && <FormErrorMessage>{error.message}</FormErrorMessage>}
+          </FormControl>
         );
       }}
     />
