@@ -25,4 +25,6 @@ async function handler(req: ApiRequestProps, res: NextApiResponse): Promise<void
   }
 }
 
-export default NextAPI(handler);
+export default NextAPI(handler, {
+  csrf: false
+});

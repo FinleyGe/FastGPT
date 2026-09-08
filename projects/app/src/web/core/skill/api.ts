@@ -5,6 +5,10 @@ import { useSystemStore } from '@/web/common/system/useSystemStore';
 import { EventStreamContentType, fetchEventSource } from '@fortaine/fetch-event-source';
 import { getLanguageRequestHeaders } from '@fastgpt/web/i18n/utils';
 import { getWebReqUrl } from '@fastgpt/web/common/system/utils';
+import {
+  FASTGPT_WEB_REQUEST_HEADER,
+  FASTGPT_WEB_REQUEST_VALUE
+} from '@fastgpt/global/common/system/constants';
 import { SseResponseEventEnum } from '@fastgpt/global/core/workflow/runtime/constants';
 import type { SandboxStatusItemType } from '@fastgpt/global/core/chat/type';
 import type {
@@ -128,6 +132,7 @@ export const streamInitSkillRuntime = ({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        [FASTGPT_WEB_REQUEST_HEADER]: FASTGPT_WEB_REQUEST_VALUE,
         ...getLanguageRequestHeaders()
       },
       body: JSON.stringify(data),

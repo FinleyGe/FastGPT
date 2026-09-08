@@ -8,6 +8,10 @@ import { TTSTypeEnum } from '@/web/core/app/constants';
 import { useTranslation } from 'next-i18next';
 import type { OutLinkChatAuthProps } from '@fastgpt/global/support/permission/chat';
 import { useMount } from 'ahooks';
+import {
+  FASTGPT_WEB_REQUEST_HEADER,
+  FASTGPT_WEB_REQUEST_VALUE
+} from '@fastgpt/global/common/system/constants';
 import { getWebReqUrl } from '@fastgpt/web/common/system/utils';
 import { getLangMapping } from '@fastgpt/web/i18n/utils';
 import type { localeType } from '@fastgpt/global/common/i18n/type';
@@ -89,7 +93,8 @@ export const useAudioPlay = (props?: {
       const response = await fetch(getWebReqUrl('/api/core/chat/record/getSpeech'), {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          [FASTGPT_WEB_REQUEST_HEADER]: FASTGPT_WEB_REQUEST_VALUE
         },
         signal: audioController.current.signal,
         body: JSON.stringify({

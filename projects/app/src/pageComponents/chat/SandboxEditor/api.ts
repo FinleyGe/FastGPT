@@ -12,6 +12,10 @@ import type {
 import { parseContentDispositionFilename } from '@fastgpt/global/common/file/tools';
 import { POST, POSTRawFile } from '@/web/common/api/request';
 import { useSystemStore } from '@/web/common/system/useSystemStore';
+import {
+  FASTGPT_WEB_REQUEST_HEADER,
+  FASTGPT_WEB_REQUEST_VALUE
+} from '@fastgpt/global/common/system/constants';
 import type { OutLinkChatAuthProps } from '@fastgpt/global/support/permission/chat';
 
 type SandboxRawTargetRequest = {
@@ -65,7 +69,10 @@ export const getSandboxProxyWsUrl = ({
 const fetchSandboxDownloadResponse = (data: SandboxDownloadClientBody) =>
   fetch('/api/core/ai/sandbox/download', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      [FASTGPT_WEB_REQUEST_HEADER]: FASTGPT_WEB_REQUEST_VALUE
+    },
     body: JSON.stringify(normalizeSandboxRequest(data))
   });
 

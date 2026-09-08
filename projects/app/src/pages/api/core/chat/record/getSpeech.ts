@@ -1,3 +1,4 @@
+import { NextAPI } from '@/service/middleware/entry';
 import type { NextApiResponse } from 'next';
 import { jsonRes } from '@fastgpt/service/common/response';
 
@@ -44,6 +45,8 @@ async function handler(req: ApiRequestProps, res: NextApiResponse) {
     }
 
     const bufferId = `${ttsModel.model}-${ttsConfig.voice}`;
+
+    res.setHeader('Content-Type', 'audio/mpeg');
 
     /* get audio from buffer */
     const ttsBuffer = await MongoTTSBuffer.findOne(
@@ -109,5 +112,4 @@ async function handler(req: ApiRequestProps, res: NextApiResponse) {
   }
 }
 
-// 不能使用 NextApiResponse
-export default handler;
+export default NextAPI(handler);

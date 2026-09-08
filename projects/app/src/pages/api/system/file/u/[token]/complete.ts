@@ -38,4 +38,6 @@ async function handler(
   }
 }
 
-export default NextAPI(handler);
+export default NextAPI(handler, {
+  csrf: false
+});

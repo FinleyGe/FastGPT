@@ -22,6 +22,10 @@ import {
 } from '@fortaine/fetch-event-source';
 import { formatTime2YMDHMW } from '@fastgpt/global/common/string/time';
 import { getWebReqUrl } from '@fastgpt/web/common/system/utils';
+import {
+  FASTGPT_WEB_REQUEST_HEADER,
+  FASTGPT_WEB_REQUEST_VALUE
+} from '@fastgpt/global/common/system/constants';
 import type { OnOptimizePromptProps } from '@/components/common/PromptEditor/OptimizerPopover';
 import type { OnOptimizeCodeProps } from '@/pageComponents/app/detail/WorkflowComponents/Flow/nodes/NodeCode/Copilot';
 import { AuxiliaryGenerationEventEnum } from '@fastgpt/global/core/ai/auxiliaryGeneration/constants';
@@ -367,6 +371,7 @@ function $ssefetch(params: SSEFetchParams) {
       const fetchEventSourceOptions: FetchEventSourceInit = {
         ...restRequestInit,
         headers: {
+          [FASTGPT_WEB_REQUEST_HEADER]: FASTGPT_WEB_REQUEST_VALUE,
           ...getLanguageRequestHeaders(),
           ...headersInitToRecord(initHeaders)
         },
@@ -545,7 +550,10 @@ function $resumefetch({
       const req = new Request(getWebReqUrl(url));
 
       await fetchEventSource(req, {
-        headers: getLanguageRequestHeaders(),
+        headers: {
+          [FASTGPT_WEB_REQUEST_HEADER]: FASTGPT_WEB_REQUEST_VALUE,
+          ...getLanguageRequestHeaders()
+        },
         signal: signal,
         async onopen(res) {
           clearTimeout(timer);

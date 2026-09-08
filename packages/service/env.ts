@@ -306,7 +306,7 @@ export const serviceEnv = createEnv({
     ALLOWED_ORIGINS: z
       .string()
       .optional()
-      .meta({ description: '自定义跨域；不配置时默认允许所有跨域（逗号分割）' }),
+      .meta({ description: '自定义跨域白名单；未配置时允许所有跨域（逗号分隔）' }),
     MULTIPLE_DATA_TO_BASE64: BoolSchema.default(false).meta({
       description: '是否强制将图片、音频、视频转成 base64 传递给模型'
     }),
