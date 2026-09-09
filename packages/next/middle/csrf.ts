@@ -1,7 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-
-export const FASTGPT_WEB_REQUEST_HEADER = 'fastgpt-web-request';
-export const FASTGPT_WEB_REQUEST_VALUE = '1';
+import { FASTGPT_WEB_REQUEST_HEADER } from '@fastgpt/global/common/system/constants';
 
 type RequestHeaders = Headers | Record<string, string | string[] | undefined>;
 type WebRequest = {

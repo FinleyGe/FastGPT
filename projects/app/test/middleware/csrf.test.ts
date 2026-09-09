@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { FASTGPT_WEB_REQUEST_HEADER } from '@fastgpt/global/common/system/constants';
 import {
-  FASTGPT_WEB_REQUEST_HEADER,
   isAllowedOrigin,
   isAllowedReferer,
   isValidWebRequest,
