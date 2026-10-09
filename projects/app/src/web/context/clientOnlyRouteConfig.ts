@@ -1,4 +1,8 @@
-const standaloneClientOnlyRoutes = new Set(['/dashboard/tool/marketplace', '/price']);
+const standaloneClientOnlyRoutes = new Set([
+  '/config/tool/marketplace',
+  '/dashboard/tool/marketplace',
+  '/price'
+]);
 
 const clientOnlyRouteExceptions = new Set(['/account/cancel']);
 
