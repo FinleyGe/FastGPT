@@ -117,5 +117,11 @@
   "migrations.20261009_migrate_dataset_rebuild_status.result": "마이그레이션 완료. 이전 상태 {{remainingCount}}개가 남아 있습니다.",
   "migrations.20261009_migrate_dataset_rebuild_status.datas": "이전 재색인 필드 변환",
   "migrations.20261009_migrate_dataset_rebuild_status.trainings": "재색인 작업 상태 복원",
-  "migrations.20261009_migrate_dataset_rebuild_status.validation": "마이그레이션 검증"
+  "migrations.20261009_migrate_dataset_rebuild_status.validation": "마이그레이션 검증",
+  "migrations.20261011_backfill_folder_ancestor_ids.name": "폴더 상위 경로 백필",
+  "migrations.20261011_backfill_folder_ancestor_ids.description": "parentId를 기준으로 App, 도구 및 데이터 세트 폴더 경로를 다시 만들고 비폴더의 오래된 값을 제거합니다. 안전하게 마이그레이션할 수 없는 레코드는 수정 후 재시도할 수 있도록 표시됩니다.",
+  "migrations.20261011_backfill_folder_ancestor_ids.result": "리소스 {{scannedCount}}개를 검사했으며, 해결되지 않은 레코드는 {{failedCount}}개입니다.",
+  "migrations.20261011_backfill_folder_ancestor_ids.apps": "App 및 도구 폴더 경로 백필",
+  "migrations.20261011_backfill_folder_ancestor_ids.datasets": "데이터 세트 폴더 경로 백필",
+  "migrations.20261011_backfill_folder_ancestor_ids.validation": "폴더 경로 검증"
 }

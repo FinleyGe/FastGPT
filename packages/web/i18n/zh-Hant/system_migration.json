@@ -117,5 +117,11 @@
   "migrations.20261009_migrate_dataset_rebuild_status.result": "遷移完成，剩餘舊狀態 {{remainingCount}} 筆。",
   "migrations.20261009_migrate_dataset_rebuild_status.datas": "遷移舊重建標記",
   "migrations.20261009_migrate_dataset_rebuild_status.trainings": "恢復重建任務狀態",
-  "migrations.20261009_migrate_dataset_rebuild_status.validation": "驗證遷移結果"
+  "migrations.20261009_migrate_dataset_rebuild_status.validation": "驗證遷移結果",
+  "migrations.20261011_backfill_folder_ancestor_ids.name": "回填目錄祖先路徑",
+  "migrations.20261011_backfill_folder_ancestor_ids.description": "以 parentId 重建 App、工具與知識庫資料夾路徑，並清除非資料夾上的殘留欄位。無法安全遷移的記錄會列出，修復後可重試。",
+  "migrations.20261011_backfill_folder_ancestor_ids.result": "已掃描 {{scannedCount}} 筆目錄與資源記錄，尚有 {{failedCount}} 筆未解決記錄。",
+  "migrations.20261011_backfill_folder_ancestor_ids.apps": "回填 App 與工具資料夾路徑",
+  "migrations.20261011_backfill_folder_ancestor_ids.datasets": "回填知識庫資料夾路徑",
+  "migrations.20261011_backfill_folder_ancestor_ids.validation": "驗證資料夾路徑"
 }

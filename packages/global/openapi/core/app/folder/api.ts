@@ -37,11 +37,6 @@ export const CreateAppFolderBodySchema = z
   });
 export type CreateAppFolderBodyType = z.infer<typeof CreateAppFolderBodySchema>;
 
-export const CreateAppFolderResponseSchema = z.undefined().meta({
-  description: '创建成功'
-});
-export type CreateAppFolderResponseType = z.infer<typeof CreateAppFolderResponseSchema>;
-
 /* ============================================================================
  * API: 获取应用文件夹路径
  * Route: GET /api/core/app/folder/path
