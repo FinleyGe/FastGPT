@@ -143,7 +143,6 @@ const MyInfo = ({ onOpenContact }: { onOpenContact: () => void }) => {
   const { isPc } = useSystem();
   const { toast } = useToast();
   const canManagePassword = canManagePasswordFromAccountInfo({
-    isPlus: feConfigs?.isPlus,
     username: userInfo?.username,
     passwordAvailable: userInfo?.passwordAvailable
   });

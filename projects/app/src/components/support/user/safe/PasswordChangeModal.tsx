@@ -38,7 +38,7 @@ type Stage =
   | { type: 'prompt' }
   | { type: 'authorizing' }
   | { type: 'verification'; method: AccountVerificationMethod }
-  | { type: 'password'; authorization: Authorization }
+  | { type: 'password'; authorization?: Authorization }
   | { type: 'unavailable' };
 
 const isOAuthMethod = (
@@ -63,6 +63,7 @@ const PasswordChangeModal = ({
   const router = useRouter();
   const { toast } = useToast();
   const { userInfo, initUserInfo } = useUserStore();
+  const isPlus = useSystemStore((state) => state.feConfigs?.isPlus) === true;
   const storedSession = usePasswordChangeStore((state) => state.session);
   const setStoredSession = usePasswordChangeStore((state) => state.setSession);
   const initialAuthorization = storedSession?.required === required ? storedSession : undefined;
@@ -77,7 +78,8 @@ const PasswordChangeModal = ({
         }
       };
     }
-    return showExpiredPrompt ? { type: 'prompt' } : { type: 'authorizing' };
+    if (showExpiredPrompt) return { type: 'prompt' };
+    return isPlus ? { type: 'authorizing' } : { type: 'password' };
   });
   const [submitting, setSubmitting] = useState(false);
   const form = useForm<PasswordFormType>({
@@ -210,7 +212,7 @@ const PasswordChangeModal = ({
     try {
       await updatePassword({
         newPassword,
-        passwordChangeSession: stage.authorization.sessionId
+        passwordChangeSession: stage.authorization?.sessionId
       });
       form.reset();
       setStoredSession(undefined);
@@ -226,7 +228,7 @@ const PasswordChangeModal = ({
           status: 'error',
           title: t('common:password_verification_expired', '身份认证已过期，请重新验证')
         });
-        setStage({ type: 'authorizing' });
+        setStage(isPlus ? { type: 'authorizing' } : { type: 'unavailable' });
         return;
       }
       const errorTitle =
@@ -292,7 +294,7 @@ const PasswordChangeModal = ({
               borderRadius="sm"
               fontSize="mini"
               lineHeight={4}
-              onClick={() => setStage({ type: 'authorizing' })}
+              onClick={() => setStage(isPlus ? { type: 'authorizing' } : { type: 'password' })}
             >
               {t('common:password_expired_action')}
             </Button>
@@ -324,7 +326,12 @@ const PasswordChangeModal = ({
           <Text mt={6} color="myGray.600" fontSize="sm" lineHeight="20px" textAlign="center">
             {t('common:password_verification_unavailable')}
           </Text>
-          <Button mt={6} h={10} w="100%" onClick={() => setStage({ type: 'authorizing' })}>
+          <Button
+            mt={6}
+            h={10}
+            w="100%"
+            onClick={() => setStage(isPlus ? { type: 'authorizing' } : { type: 'password' })}
+          >
             {t('common:password_verification_retry')}
           </Button>
         </Box>

@@ -76,30 +76,32 @@ export const createPasswordChangeSession = async ({
 };
 
 /**
- * 在同一 Mongo 事务中校验改密 Session、更新密码并消费 Session。
+ * 在同一 Mongo 事务中更新密码；提供 sessionId 时先校验并消费一次性改密 Session，
  * 只有密码更新和凭证删除都成功，事务才会提交，避免凭证被提前消费或重复使用。
  */
-export const updatePasswordWithChangeSession = async ({
+export const updatePassword = async ({
   sessionId,
   userId,
   loginSessionId,
   newPassword
 }: PasswordChangeSessionData & {
-  sessionId: string;
+  sessionId?: string;
   newPassword: string;
 }) =>
   mongoSessionRun(async (session) => {
-    const dataId = getPasswordChangeSessionDataId(sessionId);
-    const record = await MongoTmpData.findOne({
-      dataId,
-      expireAt: { $gt: new Date() },
-      'data.userId': userId,
-      'data.loginSessionId': loginSessionId
-    })
-      .session(session)
-      .lean();
+    const dataId = sessionId ? getPasswordChangeSessionDataId(sessionId) : undefined;
+    if (dataId) {
+      const record = await MongoTmpData.findOne({
+        dataId,
+        expireAt: { $gt: new Date() },
+        'data.userId': userId,
+        'data.loginSessionId': loginSessionId
+      })
+        .session(session)
+        .lean();
 
-    if (!record) throw new UserError(UserErrEnum.passwordChangeAuthorizationInvalid);
+      if (!record) throw new UserError(UserErrEnum.passwordChangeAuthorizationInvalid);
+    }
 
     await assertNewPasswordDiffersFromCurrent({ userId, newPassword, session });
 
@@ -115,6 +117,8 @@ export const updatePasswordWithChangeSession = async ({
       { session }
     );
     if (updateResult.matchedCount !== 1) throw new Error('Failed to update password');
+
+    if (!dataId) return;
 
     const deleted = await MongoTmpData.deleteOne(
       {

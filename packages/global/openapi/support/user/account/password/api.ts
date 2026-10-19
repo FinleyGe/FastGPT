@@ -218,7 +218,7 @@ export const UpdatePasswordBodySchema = z
         description: '客户端 SHA-256 处理后的新密码摘要',
         example: 'a'.repeat(64)
       }),
-    passwordChangeSession: z.string().min(1).max(128).meta({
+    passwordChangeSession: z.string().min(1).max(128).optional().meta({
       description: '身份验证成功后签发的一次性改密 Session',
       example: 'password-change-session'
     })

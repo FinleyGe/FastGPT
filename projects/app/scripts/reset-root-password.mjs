@@ -6,7 +6,9 @@
  * （`scripts/dist/reset-root-password.cjs`），改动本文件后需要重新构建产物。
  *
  * - 只写 password / passwordUpdateTime / needToChangePassword 三个字段；
- * - 目标账号不存在时报错退出，不静默创建。
+ * - 目标账号不存在时报错退出，不静默创建；
+ * - hashStr / checkPasswordRule 在此复制：源码要支持 node 直接执行（本地开发），不能 import
+ *   @fastgpt/global 的 TS 模块；两者由单测与共享实现逐项对拍，避免口令策略和摘要算法漂移。
  *
  * 用法（容器内）：
  *   docker exec -e ROOT_PSW='Xxx@12345' fastgpt node /app/scripts/reset-root-password.cjs
@@ -19,7 +21,7 @@ import { pathToFileURL } from 'node:url';
 
 const loadMongoClient = async () => (await import('mongodb')).MongoClient;
 
-/** 与 packages/service/support/user/schema.ts 的 hashStr 保持一致。 */
+/** 与 @fastgpt/global/common/string/tools 的 hashStr 一致。 */
 const hashStr = (value) => createHash('sha256').update(value).digest('hex');
 
 /** 算出 users.password 字段应存的摘要。 */
@@ -59,6 +61,23 @@ const HELP = `重置用户密码（容器内执行）
   docker exec -i <容器> node /app/scripts/reset-root-password.cjs --stdin < ./new-psw.txt
 `;
 
+/**
+ * 解析命令行参数（供 main 与单测独立调用）。
+ *
+ * 支持的选项：
+ * - `--stdin`：从标准输入读取密码；
+ * - `--dry-run`：只打印将执行的变更，不写库；
+ * - `--force`：跳过密码强度校验；
+ * - `--user <name>`：目标用户名（默认 `root`），缺参数时报错；
+ * - `--help, -h`：显示帮助。
+ *
+ * 首个参数若为 `--`（npm 传参分隔符）会被剥除。遇到未知参数、`--user` 缺少取值时抛错；
+ * 其余情况返回完整选项对象，未指定的布尔选项均为 false。
+ *
+ * @param {string[]} argv 原始参数数组（可含或不含前导 `--`）。
+ * @returns {{ user: string, stdin: boolean, dryRun: boolean, force: boolean, help: boolean }}
+ * @throws {Error} 未知参数，或 `--user` 未提供用户名。
+ */
 export const parseArgs = (argv) => {
   const options = { user: 'root', stdin: false, dryRun: false, force: false, help: false };
   const args = argv[0] === '--' ? argv.slice(1) : argv;

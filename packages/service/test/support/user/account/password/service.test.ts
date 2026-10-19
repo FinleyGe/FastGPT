@@ -7,7 +7,7 @@ import {
   getUserPasswordAvailability,
   isSsoPasswordDisabled,
   isSsoUserByUsername,
-  updatePasswordWithChangeSession
+  updatePassword
 } from '@fastgpt/service/support/user/account/password/service';
 import { UserErrEnum } from '@fastgpt/global/common/error/code/user';
 
@@ -41,7 +41,7 @@ describe('password change session service', () => {
 
   it('rejects a missing, expired, mismatched, or reused session', async () => {
     await expect(
-      updatePasswordWithChangeSession({
+      updatePassword({
         sessionId: 'missing',
         userId: 'user-1',
         loginSessionId: 'login-1',

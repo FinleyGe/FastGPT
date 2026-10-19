@@ -39,6 +39,10 @@ const ForceChangePasswordModal = dynamic(
   () => import('@/components/support/user/safe/ForceChangePasswordModal'),
   { ssr: false }
 );
+const PasswordChangeModal = dynamic(
+  () => import('@/components/support/user/safe/PasswordChangeModal'),
+  { ssr: false }
+);
 const SystemMsgModal = dynamic(() => import('@/components/support/user/inform/SystemMsgModal'), {
   ssr: false
 });
@@ -106,6 +110,8 @@ type PostLoginActionViewProps = {
   onFinishContact: () => void;
   onFinishImportantInform: () => void;
   onFinishOneTimeAction: (action: OneTimePostLoginAction) => void;
+  isPlus?: boolean;
+  username?: string;
 };
 
 /**
@@ -128,9 +134,15 @@ const POST_LOGIN_ACTION_VIEWS: Record<
   memberName: ({ onFinishOneTimeAction }) => (
     <ForceMemberNameModal onSuccess={() => onFinishOneTimeAction('memberName')} />
   ),
-  forcePasswordChange: ({ onFinishOneTimeAction }) => (
-    <ForceChangePasswordModal onFinish={() => onFinishOneTimeAction('forcePasswordChange')} />
-  ),
+  forcePasswordChange: ({ onFinishOneTimeAction, isPlus, username }) =>
+    isPlus && username !== 'root' ? (
+      <PasswordChangeModal
+        required
+        onSuccess={() => onFinishOneTimeAction('forcePasswordChange')}
+      />
+    ) : (
+      <ForceChangePasswordModal onFinish={() => onFinishOneTimeAction('forcePasswordChange')} />
+    ),
   resetExpiredPassword: ({ onFinishOneTimeAction }) => (
     <ResetExpiredPswModal enabled onFinish={() => onFinishOneTimeAction('resetExpiredPassword')} />
   ),
@@ -292,7 +304,9 @@ const PostLoginActionOrchestrator = ({
         refetchImportantInforms,
         onFinishContact: finishContact,
         onFinishImportantInform: finishImportantInform,
-        onFinishOneTimeAction: finishOneTimeAction
+        onFinishOneTimeAction: finishOneTimeAction,
+        isPlus,
+        username: userInfo?.username
       })}
     </>
   );

@@ -47,7 +47,10 @@ export const UserSchema = z.object({
   tags: z.array(UserTagsSchema).optional(),
   hasPassword: z.boolean(),
   passwordAvailable: z.boolean().optional(),
-  needToChangePassword: z.boolean().optional()
+  needToChangePassword: z.boolean().optional().meta({
+    description:
+      '账号是否必须先修改密码：为 true 时登录后只能走强制改密入口，改密成功后服务端清除该标记'
+  })
 });
 export type UserType = z.infer<typeof UserSchema>;
 

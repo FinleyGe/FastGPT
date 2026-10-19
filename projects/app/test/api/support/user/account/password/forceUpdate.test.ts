@@ -39,7 +39,8 @@ describe('password/forceUpdate API', () => {
   beforeEach(async () => {
     mocks.withUserLock.mockImplementation((_userId: string, fn: () => Promise<unknown>) => fn());
     mocks.assertPasswordUpdateRateLimit.mockResolvedValue(undefined);
-    global.feConfigs = { ...global.feConfigs, sso: undefined };
+    global.feConfigs = { ...global.feConfigs, sso: undefined, isPlus: false };
+    global.systemEnv = { ...global.systemEnv, sso: undefined };
 
     // 处于强制改密状态的账号（新口令落库后标记应被清除）。
     pendingUser = await MongoUser.create({
@@ -130,6 +131,45 @@ describe('password/forceUpdate API', () => {
     ).toBeTruthy();
   });
 
+  it('rejects non-root accounts when the commercial license is active', async () => {
+    global.feConfigs = { ...global.feConfigs, isPlus: true };
+    const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
+      forceUpdatePasswordApi,
+      { body: getBody(), auth: getAuth() }
+    );
+
+    // isPlus 时普通账号必须走二次认证，不能再用只认标记的强制端点绕过。
+    expect(response.code).toBe(500);
+    expect(response.error).toMatchObject({
+      message: UserErrEnum.passwordChangeAuthorizationInvalid
+    });
+    expect(delUserAllSession).not.toHaveBeenCalled();
+    expect(
+      await MongoUser.exists({
+        _id: pendingUser._id,
+        password: hashStr(OLD_PASSWORD),
+        needToChangePassword: true
+      })
+    ).toBeTruthy();
+  });
+
+  it('keeps root exempt from verification when the commercial license is active', async () => {
+    global.feConfigs = { ...global.feConfigs, isPlus: true };
+    const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
+      forceUpdatePasswordApi,
+      { body: getBody(), auth: getAuth(String(pendingUser._id), { isRoot: true }) }
+    );
+
+    expect(response.code).toBe(200);
+    expect(
+      await MongoUser.exists({
+        _id: pendingUser._id,
+        password: hashStr(NEW_PASSWORD),
+        needToChangePassword: false
+      })
+    ).toBeTruthy();
+  });
+
   it('rejects reusing the current password and keeps the flag pending', async () => {
     const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
       forceUpdatePasswordApi,
@@ -195,10 +235,11 @@ describe('password/forceUpdate API', () => {
 
   it('rejects a restricted SSO user before changing password or sessions', async () => {
     await MongoUser.updateOne({ _id: pendingUser._id }, { username: 'tenant-user' });
+    // SSO 接入状态由服务端从 systemEnv.sso.url 派生，feConfigs 只承载策略开关。
+    global.systemEnv = { ...global.systemEnv, sso: { url: 'https://sso.example.com' } };
     global.feConfigs = {
       ...global.feConfigs,
       sso: {
-        url: 'https://sso.example.com',
         disablePasswordForSsoUsers: true
       }
     };

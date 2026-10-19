@@ -18,16 +18,15 @@ const createFakeCollection = ({ found = true } = {}) => {
 
 describe('reset-root-password script', () => {
   it('produces the same stored hash as the user schema setter', () => {
-    // schema 未导出 setter 函数，只能从已注册的字段上取；运行时 SchemaType 一定带 applySetters。
-    const passwordPath = MongoUser.schema.path('password') as unknown as {
-      applySetters: (value: string) => string;
-    };
+    // 由模型构造函数触发 schema setter；toObject 关闭 getter 才能拿到真正落库的哈希值。
+    const storedPasswordHash = (plaintext: string) =>
+      new MongoUser({ username: 'root', password: hashStr(plaintext) }).toObject({
+        getters: false
+      }).password;
 
     for (const plaintext of ['Xxx@12345', '123456', '1234', 'aB3!aB3!']) {
       // 业务层提交的是 hashStr(明文)，schema 的 set 钩子会再哈希一次。
-      expect(computeStoredPasswordHash(plaintext)).toBe(
-        passwordPath.applySetters(hashStr(plaintext))
-      );
+      expect(computeStoredPasswordHash(plaintext)).toBe(storedPasswordHash(plaintext));
     }
 
     expect(computeStoredPasswordHash('Xxx@12345')).toBe(hashStr(hashStr('Xxx@12345')));
