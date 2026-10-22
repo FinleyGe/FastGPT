@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   compileToolRuntime,
   mergeToolRuntimeParams,
-  validateToolInputValue,
-  validateToolRuntimeParams
+  validateToolInputValue
 } from '@fastgpt/global/core/app/tool/runtime';
 import { FlowNodeInputTypeEnum } from '@fastgpt/global/core/workflow/node/constant';
 import { NodeInputKeyEnum, WorkflowIOValueTypeEnum } from '@fastgpt/global/core/workflow/constants';
@@ -367,14 +366,14 @@ describe('compileToolRuntime', () => {
 });
 
 describe('mergeToolRuntimeParams', () => {
-  it('filters unknown model fields and keeps fixed bindings authoritative', () => {
+  it('passes through model fields and keeps fixed bindings authoritative', () => {
     const result = mergeToolRuntimeParams({
       agentGeneratedKeys: ['query'],
       fixedInputBindings: { limit: 5 },
       aiParams: { query: 'fastgpt', limit: 100, unknown: true }
     });
 
-    expect(result).toEqual({ limit: 5, query: 'fastgpt' });
+    expect(result).toEqual({ limit: 5, query: 'fastgpt', unknown: true });
   });
 
   it('rejects conflicting generated and fixed keys', () => {
@@ -388,7 +387,7 @@ describe('mergeToolRuntimeParams', () => {
   });
 });
 
-describe('JSON Schema runtime validation', () => {
+describe('JSON Schema manual input validation', () => {
   const propertySchema = {
     type: 'string',
     pattern: '^[a-z]+$',
@@ -402,196 +401,6 @@ describe('JSON Schema runtime validation', () => {
     });
 
     const invalid = validateToolInputValue({ schema: propertySchema, value: 'A' });
-    expect(invalid.success).toBe(false);
-    expect(invalid.errors.length).toBeGreaterThan(0);
-  });
-
-  it('validates complete runtime parameters while preserving required checks', () => {
-    const result = validateToolRuntimeParams({
-      jsonSchema: {
-        type: 'object',
-        properties: {
-          query: propertySchema
-        },
-        required: ['query'],
-        additionalProperties: false
-      },
-      params: { query: 'fastgpt' }
-    });
-
-    expect(result).toEqual({ success: true, errors: [] });
-
-    // 显式 additionalProperties: false 时剔除未声明字段，而不是让整次调用失败
-    const paramsWithUnknown: Record<string, unknown> = { query: 'fastgpt', unknown: true };
-    expect(
-      validateToolRuntimeParams({
-        jsonSchema: {
-          type: 'object',
-          properties: { query: propertySchema },
-          additionalProperties: false
-        },
-        params: paramsWithUnknown
-      })
-    ).toEqual({ success: true, errors: [] });
-    // 就地剔除，调用方持有的同一对象即为合法入参
-    expect(paramsWithUnknown).toEqual({ query: 'fastgpt' });
-  });
-
-  it('keeps undeclared properties when additionalProperties is not false', () => {
-    const params: Record<string, unknown> = { query: 'fastgpt', unknown: true };
-
-    expect(
-      validateToolRuntimeParams({
-        jsonSchema: {
-          type: 'object',
-          properties: { query: propertySchema }
-        },
-        params
-      })
-    ).toEqual({ success: true, errors: [] });
-    expect(params).toEqual({ query: 'fastgpt', unknown: true });
-  });
-
-  it('does not strip fields for root union schemas', () => {
-    // 联合 schema 不做剔除：曾出现参数被清空成 {} 却仍判定通过、工具收到空参数的情况
-    const params: Record<string, unknown> = { query: 'fastgpt', unknown: true };
-
-    const result = validateToolRuntimeParams({
-      jsonSchema: {
-        oneOf: [
-          {
-            type: 'object',
-            properties: { query: { type: 'string', minLength: 3 } },
-            required: ['query'],
-            additionalProperties: false
-          }
-        ]
-      },
-      params
-    });
-
-    // 保留字段并如实报错，而不是静默清空
-    expect(params).toEqual({ query: 'fastgpt', unknown: true });
-    expect(result.success).toBe(false);
-    expect(result.errors.join(' ')).toContain('must NOT have additional properties');
-  });
-
-  it('keeps patternProperties fields alongside properties', () => {
-    // patternProperties 命中的键也是合法参数，不能按 properties 白名单剔除（否则静默丢参）
-    const params: Record<string, unknown> = { a: 1, x_foo: 2 };
-
-    const result = validateToolRuntimeParams({
-      jsonSchema: {
-        type: 'object',
-        properties: { a: { type: 'number' } },
-        patternProperties: { '^x_': { type: 'number' } },
-        additionalProperties: false
-      },
-      params
-    });
-
-    expect(result).toEqual({ success: true, errors: [] });
-    expect(params).toEqual({ a: 1, x_foo: 2 });
-  });
-
-  it('strips undeclared fields for nullable object root schemas', () => {
-    const params: Record<string, unknown> = { query: 'fastgpt', unknown: true };
-
-    expect(
-      validateToolRuntimeParams({
-        jsonSchema: {
-          type: ['object', 'null'],
-          properties: { query: { type: 'string' } },
-          additionalProperties: false
-        },
-        params
-      })
-    ).toEqual({ success: true, errors: [] });
-    expect(params).toEqual({ query: 'fastgpt' });
-  });
-
-  it('validates root union schemas', () => {
-    const jsonSchema = {
-      oneOf: [
-        {
-          type: 'object',
-          properties: { query: { type: 'string', minLength: 3 } },
-          required: ['query'],
-          additionalProperties: false
-        },
-        {
-          type: 'object',
-          properties: { count: { type: 'number', minimum: 1 } },
-          required: ['count'],
-          additionalProperties: false
-        }
-      ]
-    };
-
-    expect(
-      validateToolRuntimeParams({
-        jsonSchema,
-        params: { query: 'fastgpt' }
-      })
-    ).toEqual({ success: true, errors: [] });
-
-    const invalid = validateToolRuntimeParams({
-      jsonSchema,
-      params: { query: 'x' }
-    });
-    expect(invalid.success).toBe(false);
-    expect(invalid.errors.length).toBeGreaterThan(0);
-  });
-
-  it('validates root references and pattern properties without pre-filtering params', () => {
-    const referencedSchema = {
-      $ref: '#/$defs/input',
-      $defs: {
-        input: {
-          type: 'object',
-          properties: { query: { type: 'string', minLength: 3 } },
-          required: ['query'],
-          additionalProperties: false
-        }
-      }
-    };
-    expect(
-      validateToolRuntimeParams({ jsonSchema: referencedSchema, params: { query: 'fastgpt' } })
-    ).toEqual({ success: true, errors: [] });
-
-    const patternSchema = {
-      type: 'object',
-      patternProperties: { '^value_': { type: 'number' } },
-      additionalProperties: false
-    };
-    expect(
-      validateToolRuntimeParams({ jsonSchema: patternSchema, params: { value_count: 'invalid' } })
-        .success
-    ).toBe(false);
-  });
-
-  it('validates draft 2020-12 schemas with the matching AJV dialect', () => {
-    const jsonSchema = {
-      $schema: 'https://json-schema.org/draft/2020-12/schema',
-      type: 'object',
-      properties: {
-        query: { type: 'string', minLength: 3 }
-      },
-      required: ['query'],
-      additionalProperties: false
-    };
-
-    expect(
-      validateToolRuntimeParams({
-        jsonSchema,
-        params: { query: 'fastgpt' }
-      })
-    ).toEqual({ success: true, errors: [] });
-
-    const invalid = validateToolRuntimeParams({
-      jsonSchema,
-      params: { query: 'x' }
-    });
     expect(invalid.success).toBe(false);
     expect(invalid.errors.length).toBeGreaterThan(0);
   });
