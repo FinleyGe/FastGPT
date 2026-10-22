@@ -7,43 +7,35 @@ import { createDefaultTeam } from '@fastgpt/service/support/user/team/controller
 // 本测试需要真实的 mongoSessionRun 来跑事务，其余测试文件对它的全局 mock 在这里要被撤销。
 vi.unmock(import('@fastgpt/service/common/mongo/sessionRun'));
 
-describe('getUserDetail needToChangePassword', () => {
+describe('getUserDetail isActivated', () => {
   const setupUser = async ({
     username,
-    needToChangePassword
+    isActivated
   }: {
     username: string;
-    needToChangePassword?: boolean;
+    isActivated?: boolean;
   }) => {
     const user = await MongoUser.create({
       username,
       password: 'password',
-      ...(needToChangePassword === undefined ? {} : { needToChangePassword })
+      ...(isActivated === undefined ? {} : { isActivated })
     });
     await mongoSessionRun((session) => createDefaultTeam({ userId: String(user._id), session }));
     return user;
   };
 
-  it('returns true when the flag is set', async () => {
-    const user = await setupUser({ username: 'detail-flag-on', needToChangePassword: true });
+  it('returns false when the account is not activated', async () => {
+    const user = await setupUser({ username: 'detail-unactivated', isActivated: false });
 
     const detail = await getUserDetail({ userId: String(user._id) });
 
-    expect(detail.needToChangePassword).toBe(true);
+    expect(detail.isActivated).toBe(false);
   });
 
-  it('returns false when the flag is absent or false', async () => {
-    const userWithoutFlag = await setupUser({ username: 'detail-flag-absent' });
-    const userWithFalse = await setupUser({
-      username: 'detail-flag-off',
-      needToChangePassword: false
-    });
+  it('treats accounts without an activation value as activated', async () => {
+    const userWithoutField = await setupUser({ username: 'detail-field-absent' });
+    await MongoUser.updateOne({ _id: userWithoutField._id }, { $unset: { isActivated: 1 } });
 
-    expect(
-      (await getUserDetail({ userId: String(userWithoutFlag._id) })).needToChangePassword
-    ).toBe(false);
-    expect((await getUserDetail({ userId: String(userWithFalse._id) })).needToChangePassword).toBe(
-      false
-    );
+    expect((await getUserDetail({ userId: String(userWithoutField._id) })).isActivated).toBe(true);
   });
 });

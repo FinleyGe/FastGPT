@@ -4,7 +4,7 @@ import {
   CheckPswExpiredResponseSchema,
   CreatePasswordVerificationBodySchema,
   CreatePasswordVerificationResponseSchema,
-  ForceUpdatePasswordBodySchema,
+  ActivateAccountBodySchema,
   PasswordAuthorizationBodySchema,
   PasswordAuthorizationResponseSchema,
   UpdatePasswordBodySchema,
@@ -60,14 +60,14 @@ export const PasswordPath: OpenAPIPath = {
       }
     }
   },
-  '/support/user/account/password/forceUpdate': {
+  '/support/user/account/password/activate': {
     post: {
-      summary: '强制修改密码',
+      summary: '激活账号',
       description:
-        '账号处于 needToChangePassword 状态时的专用改密入口。服务端只校验该标记，并注销其他 Session',
+        '未激活账号首次设置密码的入口；成功后将账号标记为已激活，并注销其他 Session',
       tags: [DevApiTagsMap.userLogin],
       requestBody: {
-        content: { 'application/json': { schema: ForceUpdatePasswordBodySchema } }
+        content: { 'application/json': { schema: ActivateAccountBodySchema } }
       },
       responses: {
         200: {

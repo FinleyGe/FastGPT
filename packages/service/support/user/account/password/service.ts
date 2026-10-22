@@ -111,7 +111,7 @@ export const updatePassword = async ({
         $set: {
           password: newPassword,
           passwordUpdateTime: new Date(),
-          needToChangePassword: false
+          isActivated: true
         }
       },
       { session }
@@ -134,8 +134,8 @@ export const updatePassword = async ({
     }
   });
 
-/** 强制改密路径：账号处于「必须改密」状态时的专用写入。 */
-export const forceUpdatePassword = async ({
+/** 未激活账号首次设置密码；仅此路径无需旧密码，并在成功后标记账号已激活。 */
+export const activateAccount = async ({
   userId,
   newPassword
 }: {
@@ -143,23 +143,23 @@ export const forceUpdatePassword = async ({
   newPassword: string;
 }) =>
   mongoSessionRun(async (session) => {
-    const isForcedChangePending = await MongoUser.exists({
+    const isActivationPending = await MongoUser.exists({
       _id: userId,
-      needToChangePassword: true
+      isActivated: false
     }).session(session);
-    if (!isForcedChangePending) {
+    if (!isActivationPending) {
       throw new UserError(UserErrEnum.passwordChangeAuthorizationInvalid);
     }
 
     await assertNewPasswordDiffersFromCurrent({ userId, newPassword, session });
 
     const updateResult = await MongoUser.updateOne(
-      { _id: userId, needToChangePassword: true },
+      { _id: userId, isActivated: false },
       {
         $set: {
           password: newPassword,
           passwordUpdateTime: new Date(),
-          needToChangePassword: false
+          isActivated: true
         }
       },
       { session }

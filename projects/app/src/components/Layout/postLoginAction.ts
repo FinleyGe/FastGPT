@@ -1,7 +1,7 @@
 export type PostLoginAction =
   | 'invitation'
   | 'memberName'
-  | 'forcePasswordChange'
+  | 'accountActivation'
   | 'resetExpiredPassword'
   | 'contact'
   | 'systemMessage'
@@ -73,7 +73,7 @@ export const isMandatoryPostLoginActionRoute = (pathname: string) =>
 export const MANDATORY_POST_LOGIN_ACTIONS: ReadonlySet<PostLoginAction> = new Set([
   'invitation',
   'memberName',
-  'forcePasswordChange'
+  'accountActivation'
 ]);
 
 export const isMandatoryPostLoginAction = (action: PostLoginAction) =>
@@ -109,7 +109,7 @@ export const getNextPostLoginAction = ({
   contactHandled,
   isPlus,
   hasImportantInform,
-  needToChangePassword = false
+  needsAccountActivation = false
 }: {
   canStartMandatory: boolean;
   canStartOptional: boolean;
@@ -121,8 +121,8 @@ export const getNextPostLoginAction = ({
   contactHandled: boolean;
   isPlus: boolean;
   hasImportantInform: boolean;
-  /** 账号是否处于必须修改密码的状态；缺省按 false 处理。 */
-  needToChangePassword?: boolean;
+  /** 当前账号是否需要首次设置密码。 */
+  needsAccountActivation?: boolean;
 }) => {
   if (!canStartMandatory && !canStartOptional) return undefined;
   if (
@@ -135,7 +135,7 @@ export const getNextPostLoginAction = ({
   if (currentAction && isMandatoryPostLoginAction(currentAction)) return undefined;
 
   const candidates: Array<PostLoginAction | undefined> = [
-    needToChangePassword ? 'forcePasswordChange' : undefined,
+    needsAccountActivation ? 'accountActivation' : undefined,
     inviteLinkId ? 'invitation' : undefined,
     hasPendingMemberName ? 'memberName' : undefined,
     isPlus ? 'resetExpiredPassword' : undefined,

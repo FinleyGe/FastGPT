@@ -93,6 +93,6 @@ export async function getUserDetail({
       : {}),
     hasPassword: hasStoredPassword(user.password),
     passwordAvailable: getUserPasswordAvailability(user.username),
-    needToChangePassword: user.needToChangePassword === true
+    isActivated: user.isActivated !== false
   };
 }

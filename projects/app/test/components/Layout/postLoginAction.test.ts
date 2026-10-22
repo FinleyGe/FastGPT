@@ -15,7 +15,7 @@ const getAction = (
   completed: OneTimePostLoginAction[] = [],
   hasImportantInform = true,
   currentAction?: PostLoginAction,
-  needToChangePassword = false
+  needsAccountActivation = false
 ) =>
   getNextPostLoginAction({
     canStartMandatory: true,
@@ -28,7 +28,7 @@ const getAction = (
     contactHandled: false,
     isPlus: true,
     hasImportantInform,
-    needToChangePassword
+    needsAccountActivation
   });
 
 describe('post login action order', () => {
@@ -169,17 +169,17 @@ describe('post login action order', () => {
     expect(getAction([], true, 'activityAd')).toBe('activityAd');
   });
 
-  it('prioritises the forced password change over every other action', () => {
-    expect(getAction([], true, undefined, true)).toBe('forcePasswordChange');
-    // 未改密时后面的动作只能排队，不能抢在强制改密前面弹出。
-    expect(getAction(['forcePasswordChange'], true, undefined, true)).toBe('invitation');
+  it('prioritises the account activation over every other action', () => {
+    expect(getAction([], true, undefined, true)).toBe('accountActivation');
+    // 未激活时后面的动作只能排队，不能抢在账号激活前面弹出。
+    expect(getAction(['accountActivation'], true, undefined, true)).toBe('invitation');
   });
 
-  it('treats the forced password change as a mandatory action', () => {
-    expect(isMandatoryPostLoginAction('forcePasswordChange')).toBe(true);
+  it('treats the account activation as a mandatory action', () => {
+    expect(isMandatoryPostLoginAction('accountActivation')).toBe(true);
   });
 
-  it('keeps the forced password change behind the mandatory gate', () => {
+  it('keeps the account activation behind the mandatory gate', () => {
     const params = {
       canStartMandatory: true,
       canStartOptional: true,
@@ -188,16 +188,16 @@ describe('post login action order', () => {
       hasPendingMemberName: false,
       shouldShowContact: false,
       contactHandled: false,
-      // root 账号不在 plus 名单里，强制改密必须不依赖 isPlus 才能拦住默认口令。
+      // root 账号不在 plus 名单里，账号激活仍必须由独立状态控制。
       isPlus: false,
       hasImportantInform: false,
-      needToChangePassword: true
+      needsAccountActivation: true
     };
 
-    expect(getNextPostLoginAction(params)).toBe('forcePasswordChange');
-    // 只准入可选动作时不能展示强制改密：它属于强制动作集合，必须走强制门槛。
+    expect(getNextPostLoginAction(params)).toBe('accountActivation');
+    // 只准入可选动作时不能展示账号激活：它属于强制动作集合，必须走强制门槛。
     expect(getNextPostLoginAction({ ...params, canStartMandatory: false })).toBeUndefined();
-    expect(getNextPostLoginAction({ ...params, needToChangePassword: false })).toBeUndefined();
+    expect(getNextPostLoginAction({ ...params, needsAccountActivation: false })).toBeUndefined();
   });
 
   it('can enqueue important notifications again after the first login flow', () => {

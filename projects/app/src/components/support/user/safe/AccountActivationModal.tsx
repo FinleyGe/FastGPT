@@ -8,14 +8,11 @@ import { getErrResponse } from '@fastgpt/global/common/error/utils';
 import MyModal from '@fastgpt/web/components/common/MyModal';
 import { useToast } from '@fastgpt/web/hooks/useToast';
 import { useUserStore } from '@/web/support/user/useUserStore';
-import { forceUpdatePassword } from '@/web/support/user/account/password/api';
+import { activateAccount } from '@/web/support/user/account/password/api';
 import PasswordForm, { type PasswordFormType } from './PasswordForm';
 
-/**
- * 不可关闭的强制改密弹窗：账号处于 needToChangePassword 状态时，登录后必须先改密。
- * 授权来自服务端的该标记，用户只需设置新密码。
- */
-const ForceChangePasswordModal = ({ onFinish }: { onFinish: () => void }) => {
+/** 未激活账号设置新密码的前端引导；验证规则由共享密码表单负责，其他 API 不受此弹窗限制。 */
+const AccountActivationModal = ({ onFinish }: { onFinish: () => void }) => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { initUserInfo } = useUserStore();
@@ -28,17 +25,14 @@ const ForceChangePasswordModal = ({ onFinish }: { onFinish: () => void }) => {
     async ({ newPassword }: PasswordFormType) => {
       setSubmitting(true);
       try {
-        await forceUpdatePassword({ newPassword });
+        await activateAccount({ newPassword });
         form.reset();
-        // 必须刷新 userInfo：needToChangePassword 挂在 userInfo 上，
-        // 不刷新会让编排锁释放后弹窗立即重新弹出。
         await initUserInfo();
         toast({ status: 'success', title: t('common:password_set_success') });
         onFinish();
       } catch (error) {
         const errorResponse = getErrResponse(error);
-        // 标记已被别处清除（如另一个标签页刚改密成功）时，本弹窗不可关闭，
-        // 只弹通用错误会把用户彻底卡死。这里刷新状态并释放编排锁。
+        // 其他标签页可能已完成激活；刷新状态并释放本地动作锁，避免用户被卡住。
         if (errorResponse?.statusText === UserErrEnum.passwordChangeAuthorizationInvalid) {
           form.reset();
           await initUserInfo();
@@ -70,7 +64,10 @@ const ForceChangePasswordModal = ({ onFinish }: { onFinish: () => void }) => {
     >
       <Box p={8}>
         <Text fontSize="lg" fontWeight="medium" lineHeight="26px">
-          {t('common:update_password')}
+          {t('common:account_activation_title')}
+        </Text>
+        <Text mt={2} color="myGray.500" fontSize="sm">
+          {t('common:account_activation_description')}
         </Text>
         <PasswordForm form={form} submitting={submitting} onSubmit={form.handleSubmit(submit)} />
       </Box>
@@ -78,4 +75,4 @@ const ForceChangePasswordModal = ({ onFinish }: { onFinish: () => void }) => {
   );
 };
 
-export default ForceChangePasswordModal;
+export default AccountActivationModal;

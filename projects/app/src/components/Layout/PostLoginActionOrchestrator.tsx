@@ -35,12 +35,8 @@ const ResetExpiredPswModal = dynamic(
   () => import('@/components/support/user/safe/ResetExpiredPswModal'),
   { ssr: false }
 );
-const ForceChangePasswordModal = dynamic(
-  () => import('@/components/support/user/safe/ForceChangePasswordModal'),
-  { ssr: false }
-);
-const PasswordChangeModal = dynamic(
-  () => import('@/components/support/user/safe/PasswordChangeModal'),
+const AccountActivationModal = dynamic(
+  () => import('@/components/support/user/safe/AccountActivationModal'),
   { ssr: false }
 );
 const SystemMsgModal = dynamic(() => import('@/components/support/user/inform/SystemMsgModal'), {
@@ -110,8 +106,6 @@ type PostLoginActionViewProps = {
   onFinishContact: () => void;
   onFinishImportantInform: () => void;
   onFinishOneTimeAction: (action: OneTimePostLoginAction) => void;
-  isPlus?: boolean;
-  username?: string;
 };
 
 /**
@@ -134,15 +128,9 @@ const POST_LOGIN_ACTION_VIEWS: Record<
   memberName: ({ onFinishOneTimeAction }) => (
     <ForceMemberNameModal onSuccess={() => onFinishOneTimeAction('memberName')} />
   ),
-  forcePasswordChange: ({ onFinishOneTimeAction, isPlus, username }) =>
-    isPlus && username !== 'root' ? (
-      <PasswordChangeModal
-        required
-        onSuccess={() => onFinishOneTimeAction('forcePasswordChange')}
-      />
-    ) : (
-      <ForceChangePasswordModal onFinish={() => onFinishOneTimeAction('forcePasswordChange')} />
-    ),
+  accountActivation: ({ onFinishOneTimeAction }) => (
+    <AccountActivationModal onFinish={() => onFinishOneTimeAction('accountActivation')} />
+  ),
   resetExpiredPassword: ({ onFinishOneTimeAction }) => (
     <ResetExpiredPswModal enabled onFinish={() => onFinishOneTimeAction('resetExpiredPassword')} />
   ),
@@ -218,11 +206,11 @@ const PostLoginActionOrchestrator = ({
     contact: userInfo?.contact
   });
 
-  const needToChangePassword = userInfo?.needToChangePassword === true;
+  const needsAccountActivation = userInfo?.isActivated === false;
   const baseReady = !!userId && !!teamId;
   // 强制补齐不依赖未读通知数据，不能等该查询 settle；
   // 可选通知类动作需要查询结果判断 hasImportantInform，所以必须等 isFetched。
-  const canStartMandatory = (isPlus || needToChangePassword) && baseReady && canRunMandatoryActions;
+  const canStartMandatory = (isPlus || needsAccountActivation) && baseReady && canRunMandatoryActions;
   const canStartOptional = isPlus && baseReady && canRunOptionalActions && unreadQueryFetched;
 
   const finishOneTimeAction = useCallback(
@@ -255,7 +243,7 @@ const PostLoginActionOrchestrator = ({
     contactHandled,
     isPlus,
     hasImportantInform: importantInforms.length > 0,
-    needToChangePassword
+    needsAccountActivation
   });
 
   useEffect(() => {
@@ -305,8 +293,6 @@ const PostLoginActionOrchestrator = ({
         onFinishContact: finishContact,
         onFinishImportantInform: finishImportantInform,
         onFinishOneTimeAction: finishOneTimeAction,
-        isPlus,
-        username: userInfo?.username
       })}
     </>
   );

@@ -70,23 +70,23 @@ const assertDriverInlined = (metafile: Metafile) => {
 };
 
 /**
- * 跑一次产物的 --help，断言它确实能作为入口执行。
- *
- * 打包成 CJS 时 esbuild 会把 import.meta 置为空对象，源码里基于 import.meta.url 的入口判定
- * 在产物中恒为 false —— main 不执行、脚本静默什么都不做，而这类产物单看体积与退出码都正常。
- * --help 不读密码也不连库，能在构建期把这个问题挡住。
+ * 通过只输出就绪标记的自检模式验证 CJS 产物确实执行了入口逻辑，不连接数据库也不改写密码。
+ * 该检查同时防止 esbuild 将 import.meta 置空后导致产物入口静默失效。
  */
 const assertRunnable = (outfile: string) => {
-  const result = spawnSync(process.execPath, [outfile, '--help'], { encoding: 'utf8' });
-  const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
+  const selfTest = spawnSync(process.execPath, [outfile], {
+    encoding: 'utf8',
+    env: { ...process.env, RESET_ROOT_PASSWORD_SELFTEST: '1' }
+  });
+  const selfTestOutput = `${selfTest.stdout ?? ''}${selfTest.stderr ?? ''}`;
 
-  if (result.status !== 0 || !output.includes('重置用户密码')) {
-    throw new Error(`产物自检失败（--help 未按预期输出）：exit=${result.status}\n${output}`);
+  if (selfTest.status !== 0 || !selfTestOutput.includes('reset-root-password ready')) {
+    throw new Error(`产物自检失败（入口检查未按预期输出）：exit=${selfTest.status}\n${selfTestOutput}`);
   }
 };
 
 async function buildCliScript(name: string) {
-  const entryPoint = path.join(SCRIPT_DIR, `${name}.mjs`);
+  const entryPoint = path.join(SCRIPT_DIR, `${name}.ts`);
   const outfile = path.join(OUTPUT_DIR, `${name}.cjs`);
 
   if (!fs.existsSync(entryPoint)) {

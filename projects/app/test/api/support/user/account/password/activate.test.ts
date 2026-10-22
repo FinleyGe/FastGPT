@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { hashStr } from '@fastgpt/global/common/string/tools';
-import type { ForceUpdatePasswordBody } from '@fastgpt/global/openapi/support/user/account/password/api';
+import type { ActivateAccountBody } from '@fastgpt/global/openapi/support/user/account/password/api';
 import { UserErrEnum } from '@fastgpt/global/common/error/code/user';
 import { ApiRequestInputParseError } from '@fastgpt/service/common/zod/requestParseError';
 import { MongoUser } from '@fastgpt/service/support/user/schema';
 import { delUserAllSession } from '@fastgpt/service/support/user/session';
-import forceUpdatePasswordApi from '@/pages/api/support/user/account/password/forceUpdate';
+import activateAccountApi from '@/pages/api/support/user/account/password/activate';
 import { Call } from '@test/utils/request';
 
 vi.mock('@fastgpt/service/support/user/session', async (importOriginal) => {
@@ -32,7 +32,7 @@ vi.mock('@fastgpt/service/support/user/lock', () => ({
 const OLD_PASSWORD = 'old-password';
 const NEW_PASSWORD = 'brand-new-password';
 
-describe('password/forceUpdate API', () => {
+describe('password/activate API', () => {
   let pendingUser: any;
   let normalUser: any;
 
@@ -42,15 +42,15 @@ describe('password/forceUpdate API', () => {
     global.feConfigs = { ...global.feConfigs, sso: undefined, isPlus: false };
     global.systemEnv = { ...global.systemEnv, sso: undefined };
 
-    // 处于强制改密状态的账号（新口令落库后标记应被清除）。
+    // 待激活账号（新口令落库后应标记为已激活）。
     pendingUser = await MongoUser.create({
-      username: 'force-update-api-pending',
+      username: 'activate-api-pending',
       password: hashStr(OLD_PASSWORD),
-      needToChangePassword: true
+      isActivated: false
     });
-    // 未处于强制改密状态的账号，用于验证 fail-closed。
+    // 默认已激活的账号，用于验证不能重放激活接口。
     normalUser = await MongoUser.create({
-      username: 'force-update-api-normal',
+      username: 'activate-api-normal',
       password: hashStr(OLD_PASSWORD)
     });
 
@@ -61,8 +61,8 @@ describe('password/forceUpdate API', () => {
   const getAuth = (userId = String(pendingUser._id), overrides: Record<string, unknown> = {}) =>
     ({
       userId,
-      teamId: 'force-update-team',
-      tmbId: 'force-update-tmb',
+      teamId: 'activate-team',
+      tmbId: 'activate-tmb',
       isRoot: false,
       sessionId: 'current-session',
       ...overrides
@@ -70,11 +70,11 @@ describe('password/forceUpdate API', () => {
 
   const getBody = ({
     newPsw = hashStr(NEW_PASSWORD)
-  }: { newPsw?: string } = {}): ForceUpdatePasswordBody => ({ newPsw });
+  }: { newPsw?: string } = {}): ActivateAccountBody => ({ newPsw });
 
-  it('clears the pending flag and revokes the other sessions on success', async () => {
-    const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
-      forceUpdatePasswordApi,
+  it('activates the account and revokes the other sessions on success', async () => {
+    const response = await Call<ActivateAccountBody, Record<string, never>, undefined>(
+      activateAccountApi,
       { body: getBody(), auth: getAuth() }
     );
 
@@ -88,7 +88,7 @@ describe('password/forceUpdate API', () => {
       await MongoUser.exists({
         _id: pendingUser._id,
         password: hashStr(NEW_PASSWORD),
-        needToChangePassword: false
+        isActivated: true
       })
     ).toBeTruthy();
     // 发起改密的 Session 保留，其余注销（与其他改密路径一致）。
@@ -96,7 +96,7 @@ describe('password/forceUpdate API', () => {
   });
 
   it('no longer accepts an old password field', async () => {
-    const response = await Call<any, Record<string, never>, undefined>(forceUpdatePasswordApi, {
+    const response = await Call<any, Record<string, never>, undefined>(activateAccountApi, {
       body: { ...getBody(), oldPsw: hashStr(OLD_PASSWORD) },
       auth: getAuth()
     });
@@ -106,15 +106,15 @@ describe('password/forceUpdate API', () => {
       await MongoUser.exists({
         _id: pendingUser._id,
         password: hashStr(OLD_PASSWORD),
-        needToChangePassword: true
+        isActivated: false
       })
     ).toBeTruthy();
   });
 
-  it('rejects an account that is not pending a forced change', async () => {
-    // 标记未置位时必须拒绝：本端点不校验旧密码，标记是唯一的授权依据。
-    const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
-      forceUpdatePasswordApi,
+  it('rejects an account that is not pending activation', async () => {
+    // 已激活账号必须拒绝：本端点不校验旧密码，只能用于首次激活。
+    const response = await Call<ActivateAccountBody, Record<string, never>, undefined>(
+      activateAccountApi,
       {
         body: getBody(),
         auth: getAuth(String(normalUser._id))
@@ -131,63 +131,43 @@ describe('password/forceUpdate API', () => {
     ).toBeTruthy();
   });
 
-  it('rejects non-root accounts when the commercial license is active', async () => {
+  it('allows non-root accounts when the commercial license is active', async () => {
     global.feConfigs = { ...global.feConfigs, isPlus: true };
-    const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
-      forceUpdatePasswordApi,
+    const response = await Call<ActivateAccountBody, Record<string, never>, undefined>(
+      activateAccountApi,
       { body: getBody(), auth: getAuth() }
     );
 
-    // isPlus 时普通账号必须走二次认证，不能再用只认标记的强制端点绕过。
-    expect(response.code).toBe(500);
-    expect(response.error).toMatchObject({
-      message: UserErrEnum.passwordChangeAuthorizationInvalid
-    });
-    expect(delUserAllSession).not.toHaveBeenCalled();
-    expect(
-      await MongoUser.exists({
-        _id: pendingUser._id,
-        password: hashStr(OLD_PASSWORD),
-        needToChangePassword: true
-      })
-    ).toBeTruthy();
-  });
-
-  it('keeps root exempt from verification when the commercial license is active', async () => {
-    global.feConfigs = { ...global.feConfigs, isPlus: true };
-    const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
-      forceUpdatePasswordApi,
-      { body: getBody(), auth: getAuth(String(pendingUser._id), { isRoot: true }) }
-    );
-
+    // 商业版本的普通账号仍可使用激活流程；该端点不要求旧密码。
     expect(response.code).toBe(200);
     expect(
       await MongoUser.exists({
         _id: pendingUser._id,
         password: hashStr(NEW_PASSWORD),
-        needToChangePassword: false
+        isActivated: true
       })
     ).toBeTruthy();
+    expect(delUserAllSession).toHaveBeenCalledWith(String(pendingUser._id), ['current-session']);
   });
 
   it('rejects reusing the current password and keeps the flag pending', async () => {
-    const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
-      forceUpdatePasswordApi,
+    const response = await Call<ActivateAccountBody, Record<string, never>, undefined>(
+      activateAccountApi,
       { body: getBody({ newPsw: hashStr(OLD_PASSWORD) }), auth: getAuth() }
     );
 
     expect(response.code).toBe(500);
     expect(response.error).toMatchObject({ message: UserErrEnum.newPasswordSameAsOld });
     expect(
-      await MongoUser.exists({ _id: pendingUser._id, needToChangePassword: true })
+      await MongoUser.exists({ _id: pendingUser._id, isActivated: false })
     ).toBeTruthy();
   });
 
   it('rejects the request before the lock when the per-user rate limit is reached', async () => {
     mocks.assertPasswordUpdateRateLimit.mockRejectedValueOnce(new Error('rate limited'));
 
-    const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
-      forceUpdatePasswordApi,
+    const response = await Call<ActivateAccountBody, Record<string, never>, undefined>(
+      activateAccountApi,
       { body: getBody(), auth: getAuth() }
     );
 
@@ -199,17 +179,17 @@ describe('password/forceUpdate API', () => {
   });
 
   it('rejects unknown body fields instead of applying them to another account', async () => {
-    const withUserId = await Call<any, Record<string, never>, undefined>(forceUpdatePasswordApi, {
+    const withUserId = await Call<any, Record<string, never>, undefined>(activateAccountApi, {
       body: { ...getBody(), userId: String(normalUser._id) },
       auth: getAuth()
     });
     // 密码入参必须是 64 位 SHA-256 摘要，前端传入明文摘要以外的东西一律拒绝。
     const withPlainPassword = await Call<any, Record<string, never>, undefined>(
-      forceUpdatePasswordApi,
+      activateAccountApi,
       { body: getBody({ newPsw: 'plain-password' }), auth: getAuth() }
     );
 
-    // ForceUpdatePasswordBodySchema 是 .strict() 的，未知字段在入参校验阶段即被
+    // ActivateAccountBodySchema 是 .strict() 的，未知字段在入参校验阶段即被
     // ApiRequestInputParseError 拒绝（生产入口层映射为 400）。应用测试的 createApiEntry
     // 是被 mock 的简化版本，会把一切异常折叠成 500，因此断言错误类型本身。
     expect(withUserId.error).toBeInstanceOf(ApiRequestInputParseError);
@@ -222,8 +202,8 @@ describe('password/forceUpdate API', () => {
   });
 
   it('rejects requests without a current Session', async () => {
-    const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
-      forceUpdatePasswordApi,
+    const response = await Call<ActivateAccountBody, Record<string, never>, undefined>(
+      activateAccountApi,
       { body: getBody(), auth: getAuth(String(pendingUser._id), { sessionId: undefined }) }
     );
 
@@ -243,8 +223,8 @@ describe('password/forceUpdate API', () => {
         disablePasswordForSsoUsers: true
       }
     };
-    const response = await Call<ForceUpdatePasswordBody, Record<string, never>, undefined>(
-      forceUpdatePasswordApi,
+    const response = await Call<ActivateAccountBody, Record<string, never>, undefined>(
+      activateAccountApi,
       { body: getBody(), auth: getAuth() }
     );
 
@@ -255,7 +235,7 @@ describe('password/forceUpdate API', () => {
       await MongoUser.exists({
         _id: pendingUser._id,
         password: hashStr(OLD_PASSWORD),
-        needToChangePassword: true
+        isActivated: false
       })
     ).toBeTruthy();
   });

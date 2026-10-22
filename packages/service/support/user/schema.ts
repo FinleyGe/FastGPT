@@ -31,10 +31,10 @@ const UserSchema = new Schema({
     select: false
   },
   passwordUpdateTime: Date,
-  // 标记账号必须先修改密码才能正常使用。
-  needToChangePassword: {
+  // 未激活账号需由用户本人设置新密码；旧用户缺少字段时按已激活处理。
+  isActivated: {
     type: Boolean,
-    default: false
+    default: true
   },
   createTime: {
     type: Date,

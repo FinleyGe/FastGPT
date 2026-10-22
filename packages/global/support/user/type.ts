@@ -27,7 +27,7 @@ export type UserModelSchema = {
   status: `${UserStatusEnum}`;
   lastLoginTmbId?: string;
   passwordUpdateTime?: Date;
-  needToChangePassword?: boolean;
+  isActivated?: boolean;
   fastgpt_sem?: FastGPTSemType;
   contact?: string | null;
   tags: UserTagsType[];
@@ -47,9 +47,8 @@ export const UserSchema = z.object({
   tags: z.array(UserTagsSchema).optional(),
   hasPassword: z.boolean(),
   passwordAvailable: z.boolean().optional(),
-  needToChangePassword: z.boolean().optional().meta({
-    description:
-      '账号是否必须先修改密码：为 true 时登录后只能走强制改密入口，改密成功后服务端清除该标记'
+  isActivated: z.boolean().optional().meta({
+    description: '账号是否已激活；false 时登录后提示用户自行设置新密码'
   })
 });
 export type UserType = z.infer<typeof UserSchema>;

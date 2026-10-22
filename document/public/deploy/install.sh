@@ -689,8 +689,9 @@ normalize_deploy_base_url() {
     printf '%s/deploy\n' "$url"
 }
 
-# root 初始密码固定为 123456，首次登录会强制要求修改；
-# 忘记密码时用容器脚本重置：docker exec -e ROOT_PSW='新密码' <容器> node /app/scripts/reset-root-password.cjs
+# root 初始密码固定为 123456，首次登录需通过账号激活设置新密码；
+# 忘记密码时可用容器脚本重置：docker exec <容器> node /app/scripts/reset-root-password.cjs '新密码'
+# 省略脚本参数时会将 root 密码重置为 123456。
 ROOT_LOGIN_PASSWORD="123456"
 
 randomize_compose_credentials() {
@@ -1405,7 +1406,7 @@ if LC_ALL=C grep -q "opensandbox-agent-sandbox-image" docker-compose.yml; then
     fi
     echo "  4. 访问服务:   $FE_DOMAIN_INPUT"
     echo "  5. 登录服务:   默认账号 'root'，初始密码 '$ROOT_LOGIN_PASSWORD'"
-    echo "                 （首次登录会强制要求修改密码，请提前准备新密码）"
+    echo "                 （首次登录需完成账号激活并设置新密码）"
     echo "  6. 配置模型:   在 '账号-模型提供商' 页面，进行模型配置"
 else
     echo "  1. 预拉取镜像: docker compose pull"
@@ -1417,7 +1418,7 @@ else
     fi
     echo "  4. 访问服务:   $FE_DOMAIN_INPUT"
     echo "  5. 登录服务:   默认账号 'root'，初始密码 '$ROOT_LOGIN_PASSWORD'"
-    echo "                 （首次登录会强制要求修改密码，请提前准备新密码）"
+    echo "                 （首次登录需完成账号激活并设置新密码）"
     echo "  6. 配置模型:   在 '账号-模型提供商' 页面，进行模型配置"
 fi
 echo ""

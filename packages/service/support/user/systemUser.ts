@@ -73,6 +73,12 @@ const executeSystemUserCreation = async (): Promise<void> => {
     const rootUser = await MongoUser.findOne({ username: 'root' }, undefined, { session });
     const rootUId = await (async () => {
       if (rootUser) {
+        // 旧库中 root 缺少激活字段时也必须首次进入激活流程；已显式激活的 root 不受重启影响。
+        await MongoUser.updateOne(
+          { _id: rootUser._id, isActivated: { $exists: false } },
+          { $set: { isActivated: false } },
+          { session }
+        );
         return rootUser._id;
       } else {
         const [{ _id }] = await MongoUser.create(
@@ -80,7 +86,7 @@ const executeSystemUserCreation = async (): Promise<void> => {
             {
               username: 'root',
               password: hashStr(DEFAULT_ROOT_PASSWORD),
-              needToChangePassword: true
+              isActivated: false
             }
           ],
           { session, ordered: true }
